@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gym Progress Tracker</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --card:#181b22;
+    --card2:#20242e;
+    --accent:#ff5533;
+    --accent2:#3ddc97;
+    --text:#f2f2f2;
+    --muted:#8a8f9a;
+    --border:#2a2e38;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-bottom:90px;
+  }
+  header{
+    padding:20px 16px 14px;
+    position:sticky;top:0;
+    background:var(--bg);
+    z-index:10;
+    border-bottom:1px solid var(--border);
+  }
+  header h1{
+    margin:0;
+    font-size:22px;
+    letter-spacing:-0.5px;
+  }
+  header .sub{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:2px;
+  }
+  .tabs{
+    display:flex;
+    gap:8px;
+    padding:12px 16px 0;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 0;
+    border-radius:10px;
+    background:var(--card);
+    color:var(--muted);
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid var(--border);
+  }
+  .tab.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  main{padding:16px;}
+  .section{display:none;}
+  .section.active{display:block;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+    margin-top:12px;
+  }
+  label:first-child{margin-top:0;}
+  input, select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--card2);
+    color:var(--text);
+    font-size:15px;
+  }
+  input:focus, select:focus{outline:1px solid var(--accent);}
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  button.primary{
+    width:100%;
+    margin-top:16px;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:var(--accent);
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  button.primary:active{opacity:0.8;}
+
+  .day-group{margin-bottom:18px;}
+  .day-title{
+    font-size:14px;
+    font-weight:700;
+    color:var(--accent2);
+    margin-bottom:8px;
+    padding-left:2px;
+  }
+  .entry{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .entry .name{font-weight:600; font-size:15px;}
+  .entry .meta{color:var(--muted); font-size:13px; margin-top:2px;}
+  .entry .del{
+    color:#ff5c5c;
+    font-size:13px;
+    padding:6px 10px;
+    cursor:pointer;
+    border:1px solid #3a2222;
+    border-radius:8px;
+    background:#241717;
+  }
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:40px 10px;
+    font-size:14px;
+  }
+  select#filterExercise{margin-bottom:14px;}
+  .stat-row{display:flex; gap:10px; margin-bottom:14px;}
+  .stat{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px;
+    text-align:center;
+  }
+  .stat .val{font-size:20px; font-weight:800; color:var(--accent2);}
+  .stat .lbl{font-size:11px; color:var(--muted); margin-top:2px;}
+  .toast{
+    position:fixed;
+    bottom:20px;left:50%;
+    transform:translateX(-50%);
+    background:var(--accent2);
+    color:#06251a;
+    padding:10px 18px;
+    border-radius:20px;
+    font-size:14px;
+    font-weight:700;
+    opacity:0;
+    transition:opacity .25s;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏋️ Gym Tracker</h1>
+  <div class="sub">Offline · data sirf tere phone me save hota hai</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="add">+ Add</div>
+  <div class="tab" data-tab="history">History</div>
+  <div class="tab" data-tab="progress">Progress</div>
+</div>
+
+<main>
+  <!-- ADD SECTION -->
+  <section class="section active" id="add">
+    <div class="card">
+      <label>Date</label>
+      <input type="date" id="inpDate">
+
+      <label>Exercise Name</label>
+      <input type="text" id="inpExercise" placeholder="e.g. Bench Press" list="exerciseList">
+      <datalist id="exerciseList"></datalist>
+
+      <div class="row">
+        <div>
+          <label>Sets</label>
+          <input type="number" id="inpSets" min="1" placeholder="3">
+        </div>
+        <div>
+          <label>Reps / set</label>
+          <input type="number" id="inpReps" min="1" placeholder="12">
+        </div>
+      </div>
+
+      <label>Weight (kg) — optional</label>
+      <input type="number" id="inpWeight" min="0" step="0.5" placeholder="20">
+
+      <button class="primary" onclick="addEntry()">Save Entry</button>
+    </div>
+  </section>
+
+  <!-- HISTORY SECTION -->
+  <section class="section" id="history">
+    <select id="filterExercise" onchange="renderHistory()">
+      <option value="">Sab exercises</option>
+    </select>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- PROGRESS SECTION -->
+  <section class="section" id="progress">
+    <select id="progExercise" onchange="renderProgress()"></select>
+    <div id="progressStats" style="margin-top:14px;"></div>
+    <div id="progressList"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast">Saved ✅</div>
+
+<script>
+const STORAGE_KEY = 'gymTrackerEntries';
+
+function loadEntries(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  }catch(e){ return []; }
+}
+function saveEntries(entries){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab==='history') renderHistory();
+    if(tab.dataset.tab==='progress') renderProgress();
+  });
+});
+
+// Default date = today
+document.getElementById('inpDate').valueAsDate = new Date();
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1500);
+}
+
+function addEntry(){
+  const date = document.getElementById('inpDate').value;
+  const exercise = document.getElementById('inpExercise').value.trim();
+  const sets = document.getElementById('inpSets').value;
+  const reps = document.getElementById('inpReps').value;
+  const weight = document.getElementById('inpWeight').value;
+
+  if(!date || !exercise || !sets || !reps){
+    showToast('⚠️ Sab fields bhar bhai');
+    return;
+  }
+
+  const entries = loadEntries();
+  entries.push({
+    id: Date.now(),
+    date, exercise, sets:Number(sets), reps:Number(reps),
+    weight: weight ? Number(weight) : null
+  });
+  saveEntries(entries);
+
+  document.getElementById('inpExercise').value='';
+  document.getElementById('inpSets').value='';
+  document.getElementById('inpReps').value='';
+  document.getElementById('inpWeight').value='';
+
+  showToast('Saved ✅');
+  updateExerciseLists();
+}
+
+function updateExerciseLists(){
+  const entries = loadEntries();
+  const names = [...new Set(entries.map(e=>e.exercise))].sort();
+
+  const datalist = document.getElementById('exerciseList');
+  datalist.innerHTML = names.map(n=>`<option value="${n}">`).join('');
+
+  const filterSel = document.getElementById('filterExercise');
+  filterSel.innerHTML = '<option value="">Sab exercises</option>' + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+
+  const progSel = document.getElementById('progExercise');
+  progSel.innerHTML = names.length ? names.map(n=>`<option value="${n}">${n}</option>`).join('') : '<option value="">Koi data nahi</option>';
+}
+
+function deleteEntry(id){
+  let entries = loadEntries();
+  entries = entries.filter(e=>e.id!==id);
+  saveEntries(entries);
+  renderHistory();
+  renderProgress();
+  updateExerciseLists();
+}
+
+function renderHistory(){
+  const entries = loadEntries().sort((a,b)=> new Date(b.date)-new Date(a.date) || b.id-a.id);
+  const filter = document.getElementById('filterExercise').value;
+  const filtered = filter ? entries.filter(e=>e.exercise===filter) : entries;
+
+  const container = document.getElementById('historyList');
+  if(filtered.length===0){
+    container.innerHTML = '<div class="empty">Abhi tak koi entry nahi. "Add" tab se shuru kar 💪</div>';
+    return;
+  }
+
+  const groups = {};
+  filtered.forEach(e=>{
+    if(!groups[e.date]) groups[e.date]=[];
+    groups[e.date].push(e);
+  });
+
+  let html='';
+  Object.keys(groups).forEach(date=>{
+    html += `<div class="day-group"><div class="day-title">${formatDate(date)}</div>`;
+    groups[date].forEach(e=>{
+      html += `
+        <div class="entry">
+          <div>
+            <div class="name">${e.exercise}</div>
+            <div class="meta">${e.sets} sets × ${e.reps} reps${e.weight?` · ${e.weight}kg`:''}</div>
+          </div>
+          <div class="del" onclick="deleteEntry(${e.id})">Delete</div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderProgress(){
+  const progSel = document.getElementById('progExercise');
+  const exercise = progSel.value;
+  const statsEl = document.getElementById('progressStats');
+  const listEl = document.getElementById('progressList');
+
+  if(!exercise){
+    statsEl.innerHTML='';
+    listEl.innerHTML = '<div class="empty">Pehle kuch entries add kar</div>';
+    return;
+  }
+
+  const entries = loadEntries()
+    .filter(e=>e.exercise===exercise)
+    .sort((a,b)=> new Date(a.date)-new Date(b.date));
+
+  if(entries.length===0){
+    statsEl.innerHTML='';
+    listEl.innerHTML = '<div class="empty">Is exercise ki koi entry nahi</div>';
+    return;
+  }
+
+  const maxWeight = Math.max(...entries.map(e=>e.weight||0));
+  const totalSessions = entries.length;
+  const lastEntry = entries[entries.length-1];
+
+  statsEl.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="val">${totalSessions}</div><div class="lbl">Sessions</div></div>
+      <div class="stat"><div class="val">${maxWeight||'-'}</div><div class="lbl">Max KG</div></div>
+      <div class="stat"><div class="val">${lastEntry.reps}</div><div class="lbl">Last Reps</div></div>
+    </div>`;
+
+  let html='';
+  entries.slice().reverse().forEach(e=>{
+    html += `
+      <div class="entry">
+        <div>
+          <div class="name">${formatDate(e.date)}</div>
+          <div class="meta">${e.sets} sets × ${e.reps} reps${e.weight?` · ${e.weight}kg`:''}</div>
+        </div>
+      </div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+function formatDate(dstr){
+  const d = new Date(dstr+'T00:00:00');
+  return d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+
+// Init
+updateExerciseLists();
+renderHistory();
+</script>
+</body>
+</html>
